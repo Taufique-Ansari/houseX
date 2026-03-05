@@ -8,11 +8,8 @@ export async function GET(req: NextRequest) {
 
         const client = createServerClient(token)
         const { data: { user }, error } = await client.auth.getUser()
-        if (error || !user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        // Use admin client to bypass RLS and fetch the profile
         const { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('*')

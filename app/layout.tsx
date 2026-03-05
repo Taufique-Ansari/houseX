@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VoltTrack — Electricity Bill Manager",
-  description: "Track meter readings, set per-unit rates, generate tenant bills, and manage payments.",
+  title: "HX — Tenant Management System",
+  description: "Manage tenants, generate monthly statements, track payments, and handle utility billing.",
 };
 
 export default function RootLayout({

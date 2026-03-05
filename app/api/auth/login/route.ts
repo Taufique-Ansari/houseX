@@ -1,47 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
     try {
-        const { email, password } = await req.json()
-
-        if (!email || !password) {
-            return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+        const { username, password } = await req.json()
+        if (!username || !password) {
+            return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
         }
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey)
+        // Format username to proxy email
+        const email = `${username.trim().toLowerCase()}@hx.com`
 
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        })
+        const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
+        if (error) return NextResponse.json({ error: error.message }, { status: 401 })
 
-        if (authError) {
-            return NextResponse.json({ error: authError.message }, { status: 401 })
-        }
-
-        // Fetch user profile with role
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
             .select('*')
-            .eq('id', authData.user.id)
+            .eq('id', data.user.id)
             .single()
 
-        if (profileError) {
-            return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+        let tenant = null
+        if (profile?.role === 'tenant') {
+            const { data: tenantData } = await supabaseAdmin
+                .from('tenants')
+                .select('*')
+                .eq('id', data.user.id)
+                .single()
+            tenant = tenantData
         }
 
         return NextResponse.json({
-            user: authData.user,
-            session: authData.session,
+            user: data.user,
+            session: data.session,
             profile,
+            tenant,
         })
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Login failed'
-        console.error('Login error:', err)
         return NextResponse.json({ error: message }, { status: 500 })
     }
 }

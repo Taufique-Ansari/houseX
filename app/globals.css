@@ -40,27 +40,34 @@ button {
     border-radius: 10px;
 }
 
-/* NAV */
-.nav {
-    background: #111827;
-    border-bottom: 1px solid #1e293b;
-    padding: 0 1.5rem;
-    height: 60px;
+/* ═════════════ ADMIN SIDEBAR ═════════════ */
+.admin-shell {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 240px;
+    background: #111827;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
     top: 0;
+    left: 0;
+    bottom: 0;
     z-index: 50;
 }
 
-.nav-brand {
+.sidebar-brand {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid #1e293b;
     display: flex;
     align-items: center;
     gap: 0.625rem;
 }
 
-.nav-icon {
+.sidebar-icon {
     width: 34px;
     height: 34px;
     background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -72,72 +79,233 @@ button {
     flex-shrink: 0;
 }
 
-.nav-title {
-    font-size: 0.9rem;
+.sidebar-title {
+    font-size: 0.95rem;
     font-weight: 700;
     color: #f8fafc;
 }
 
-.nav-meta {
-    font-size: 0.68rem;
+.sidebar-subtitle {
+    font-size: 0.65rem;
     color: #64748b;
+    letter-spacing: 0.04em;
 }
 
-.nav-logout {
-    background: none;
-    border: 1px solid #2d3748;
+.sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0;
+    overflow-y: auto;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.82rem;
     color: #94a3b8;
-    padding: 0.35rem 0.875rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
     cursor: pointer;
     transition: all 0.15s;
+    border-left: 3px solid transparent;
+    text-decoration: none;
 }
 
-.nav-logout:hover {
-    border-color: #ef4444;
-    color: #ef4444;
+.sidebar-link:hover {
+    background: #1c2536;
+    color: #e2e8f0;
 }
 
-/* TABS */
-.tabs {
-    background: #111827;
-    border-bottom: 1px solid #1e293b;
-    display: flex;
-    padding: 0 1.5rem;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.tab {
-    padding: 0.875rem 1rem;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #64748b;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-
-.tab:hover {
-    color: #94a3b8;
-}
-
-.tab.active {
+.sidebar-link.active {
+    background: #1a2435;
     color: #f59e0b;
-    border-bottom-color: #f59e0b;
+    border-left-color: #f59e0b;
     font-weight: 600;
 }
 
-/* PAGE */
+.sidebar-user {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidebar-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.sidebar-user-name {
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.sidebar-user-role {
+    font-size: 0.65rem;
+    color: #64748b;
+}
+
+.admin-main {
+    flex: 1;
+    margin-left: 240px;
+    min-height: 100vh;
+}
+
+/* MOBILE SIDEBAR TOGGLE */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 60;
+    width: 36px;
+    height: 36px;
+    background: #111827;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 1.1rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 45;
+}
+
+/* ═════════════ TENANT BOTTOM NAV ═════════════ */
+.tenant-shell {
+    min-height: 100vh;
+    padding-bottom: 64px;
+}
+
+.tenant-topbar {
+    background: #111827;
+    border-bottom: 1px solid #1e293b;
+    padding: 0 1rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.tenant-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tenant-topbar-icon {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.tenant-topbar-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.tenant-topbar-flat {
+    font-size: 0.65rem;
+    color: #64748b;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #111827;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    z-index: 50;
+    padding: 0.25rem 0;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.bottom-nav-icon {
+    font-size: 1.2rem;
+}
+
+.bottom-nav-label {
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+    color: #f59e0b;
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+/* ═════════════ PAGE ═════════════ */
 .page {
     padding: 1.5rem;
-    max-width: 960px;
+    max-width: 1100px;
     margin: 0 auto;
 }
 
-/* CARDS */
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.page-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+/* ═════════════ CARDS ═════════════ */
 .card {
     background: #111827;
     border: 1px solid #1e293b;
@@ -159,7 +327,7 @@ button {
     margin-bottom: 1.25rem;
 }
 
-/* GRID */
+/* ═════════════ GRIDS ═════════════ */
 .g2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -174,27 +342,11 @@ button {
 
 .g4 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
 }
 
-@media(min-width:540px) {
-    .g4 {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media(max-width:500px) {
-    .g2 {
-        grid-template-columns: 1fr;
-    }
-
-    .g3 {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-/* STATS */
+/* ═════════════ STATS ═════════════ */
 .stat {
     background: #111827;
     border: 1px solid #1e293b;
@@ -225,7 +377,7 @@ button {
     margin-top: 0.375rem;
 }
 
-/* BUTTONS */
+/* ═════════════ BUTTONS ═════════════ */
 .btn {
     padding: 0.6rem 1.25rem;
     border-radius: 10px;
@@ -269,6 +421,24 @@ button {
     background: #047857;
 }
 
+.btn-red {
+    background: #b91c1c;
+    color: #fff;
+}
+
+.btn-red:hover {
+    background: #991b1b;
+}
+
+.btn-blue {
+    background: #2563eb;
+    color: #fff;
+}
+
+.btn-blue:hover {
+    background: #1d4ed8;
+}
+
 .btn-sm {
     padding: 0.35rem 0.75rem;
     font-size: 0.73rem;
@@ -285,7 +455,7 @@ button {
     justify-content: center;
 }
 
-/* BADGES */
+/* ═════════════ BADGES ═════════════ */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -295,7 +465,17 @@ button {
     font-weight: 700;
 }
 
-.b-pending {
+.b-draft {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.b-published {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+
+.b-partial {
     background: #451a03;
     color: #fde68a;
 }
@@ -303,6 +483,11 @@ button {
 .b-paid {
     background: #052e16;
     color: #6ee7b7;
+}
+
+.b-overdue {
+    background: #450a0a;
+    color: #fca5a5;
 }
 
 .b-info {
@@ -315,12 +500,7 @@ button {
     color: #fca5a5;
 }
 
-.b-purple {
-    background: #2e1065;
-    color: #c4b5fd;
-}
-
-/* FORM */
+/* ═════════════ FORM ═════════════ */
 .fg {
     margin-bottom: 1.25rem;
 }
@@ -355,7 +535,11 @@ button {
     color: #4b5563;
 }
 
-/* UPLOAD */
+select.fi {
+    cursor: pointer;
+}
+
+/* ═════════════ UPLOAD ═════════════ */
 .drop {
     border: 2px dashed #2d3748;
     border-radius: 12px;
@@ -386,7 +570,7 @@ button {
     margin-top: 0.25rem;
 }
 
-/* MODAL */
+/* ═════════════ MODAL ═════════════ */
 .overlay {
     position: fixed;
     inset: 0;
@@ -404,7 +588,7 @@ button {
     border-radius: 20px;
     padding: 1.75rem;
     width: 100%;
-    max-width: 500px;
+    max-width: 540px;
     max-height: 92vh;
     overflow-y: auto;
 }
@@ -437,7 +621,7 @@ button {
     color: #ef4444;
 }
 
-/* ALERTS */
+/* ═════════════ ALERTS ═════════════ */
 .alert {
     padding: 0.75rem 1rem;
     border-radius: 10px;
@@ -468,7 +652,12 @@ button {
     color: #fde68a;
 }
 
-/* TABLE */
+/* ═════════════ TABLE ═════════════ */
+.tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .tbl {
     width: 100%;
     border-collapse: collapse;
@@ -480,16 +669,18 @@ button {
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.75rem;
     text-align: left;
     border-bottom: 1px solid #1e293b;
+    white-space: nowrap;
 }
 
 .tbl td {
-    padding: 0.875rem 1rem;
+    padding: 0.75rem;
     border-bottom: 1px solid #1c2536;
     font-size: 0.82rem;
     color: #cbd5e1;
+    white-space: nowrap;
 }
 
 .tbl tr:last-child td {
@@ -500,7 +691,7 @@ button {
     background: #1a2435;
 }
 
-/* MISC HELPERS */
+/* ═════════════ MISC ═════════════ */
 .div {
     height: 1px;
     background: #1e293b;
@@ -574,6 +765,10 @@ button {
     color: #ef4444;
 }
 
+.blue {
+    color: #3b82f6;
+}
+
 .bold {
     font-weight: 700;
 }
@@ -582,7 +777,7 @@ button {
     text-align: center;
 }
 
-/* LOGIN */
+/* ═════════════ LOGIN ═════════════ */
 .login-wrap {
     min-height: 100vh;
     background: #090e1a;
@@ -598,10 +793,10 @@ button {
     border-radius: 24px;
     padding: 2.5rem;
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
 }
 
-/* SPINNER */
+/* ═════════════ SPINNER ═════════════ */
 @keyframes spin {
     to {
         transform: rotate(360deg)
@@ -613,7 +808,7 @@ button {
     animation: spin 0.7s linear infinite;
 }
 
-/* EMPTY */
+/* ═════════════ EMPTY ═════════════ */
 .empty {
     text-align: center;
     padding: 3rem 1.5rem;
@@ -625,71 +820,49 @@ button {
     margin-bottom: 0.75rem;
 }
 
-/* USER GRID */
-.user-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+/* ═════════════ TENANT CARDS ═════════════ */
+.tenant-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
 }
 
-/* NAV PROFILE BUTTON */
-.nav-profile-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.15s;
+.tenant-card:hover {
+    border-color: #2d3748;
 }
 
-.nav-profile-btn:hover {
-    transform: scale(1.1);
+/* ═════════════ STATEMENT AMOUNT ═════════════ */
+.big-amount {
+    font-size: 2.75rem;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    color: #f59e0b;
+    line-height: 1;
 }
 
-/* ═══ MOBILE RESPONSIVE ═══ */
-@media(max-width:640px) {
-    .nav {
-        padding: 0 0.75rem;
-        height: 52px;
+/* ═════════════ MOBILE RESPONSIVE ═════════════ */
+@media(max-width:768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
     }
 
-    .nav-title {
-        font-size: 0.82rem;
+    .sidebar.open {
+        transform: translateX(0);
     }
 
-    .nav-icon {
-        width: 28px;
-        height: 28px;
-        font-size: 0.85rem;
-        border-radius: 7px;
+    .sidebar-toggle {
+        display: flex;
     }
 
-    .tabs {
-        padding: 0;
-        gap: 0;
+    .sidebar-overlay.show {
+        display: block;
     }
 
-    .tab {
-        padding: 0.7rem 0.6rem;
-        font-size: 0.7rem;
-    }
-
-    .page {
-        padding: 0.75rem;
-    }
-
-    .card {
-        padding: 1rem;
-        border-radius: 12px;
-    }
-
-    .card-inner {
-        padding: 0.75rem;
-        border-radius: 10px;
-    }
-
-    .card-title {
-        font-size: 0.82rem;
-        margin-bottom: 1rem;
+    .admin-main {
+        margin-left: 0;
     }
 
     .g2 {
@@ -697,81 +870,57 @@ button {
     }
 
     .g3 {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
 
     .g4 {
         grid-template-columns: 1fr 1fr;
     }
 
-    .stat {
-        padding: 0.875rem;
+    .page {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1rem;
+        border-radius: 12px;
     }
 
     .stat-num {
-        font-size: 1.25rem;
+        font-size: 1.35rem;
+    }
+
+    .big-amount {
+        font-size: 2rem;
+    }
+
+    .modal {
+        max-width: 100%;
+        padding: 1.25rem;
+    }
+
+    .btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+@media(max-width:480px) {
+    .g3 {
+        grid-template-columns: 1fr;
+    }
+
+    .g4 {
+        grid-template-columns: 1fr;
     }
 
     .tbl th {
-        padding: 0.5rem 0.6rem;
+        padding: 0.5rem 0.5rem;
         font-size: 0.64rem;
     }
 
     .tbl td {
-        padding: 0.6rem;
-        font-size: 0.75rem;
-    }
-
-    .modal {
-        padding: 1.25rem;
-        border-radius: 16px;
-        max-width: 100%;
-    }
-
-    .overlay {
         padding: 0.5rem;
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
         font-size: 0.75rem;
-    }
-
-    .btn-sm {
-        padding: 0.3rem 0.6rem;
-        font-size: 0.68rem;
-    }
-
-    .user-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .drop {
-        padding: 1.25rem 1rem;
-    }
-
-    .drop-icon {
-        font-size: 1.5rem;
-    }
-
-    .login-box {
-        padding: 1.75rem;
-        border-radius: 18px;
-    }
-}
-
-@media(max-width:360px) {
-    .tab {
-        padding: 0.6rem 0.4rem;
-        font-size: 0.64rem;
-    }
-
-    .nav-logout {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.68rem;
-    }
-
-    .page {
-        padding: 0.5rem;
     }
 }
