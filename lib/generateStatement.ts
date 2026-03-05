@@ -43,10 +43,15 @@ export async function generateStatement(tenantId: string, month: number, year: n
     let currReading: number | null = null
 
     if (config.electricity_per_unit_rate) {
+        // The bill for month 'X' (e.g. March) covers rent for March, but electricity meant to arrive March 1st.
+        // Thus, electricity uses (Reading for Month X) - (Reading for Month X-1) 
+        // Example: March bill (X=3) uses (March reading) - (February reading)
+        const [currM, currY] = [month, year]
         const [prevM, prevY] = month === 1 ? [12, year - 1] : [month - 1, year]
+
         const { data: curr } = await supabaseAdmin
             .from('meter_readings').select('*')
-            .eq('tenant_id', tenantId).eq('month', month).eq('year', year).single()
+            .eq('tenant_id', tenantId).eq('month', currM).eq('year', currY).single()
         const { data: prev } = await supabaseAdmin
             .from('meter_readings').select('*')
             .eq('tenant_id', tenantId).eq('month', prevM).eq('year', prevY).single()
@@ -124,7 +129,8 @@ export async function generateStatement(tenantId: string, month: number, year: n
     ]
 
     if (electricityCharge > 0) {
-        ledgerEntries.push({ tenant_id: tenantId, statement_id: statement.id, type: 'charge', description: `Electricity (${unitsUsed} kWh) — ${monthName(month)} ${year}`, amount: electricityCharge, created_by: adminId })
+        const [prevM, prevY] = month === 1 ? [12, year - 1] : [month - 1, year]
+        ledgerEntries.push({ tenant_id: tenantId, statement_id: statement.id, type: 'charge', description: `Electricity (${unitsUsed} kWh) — ${monthName(prevM)} ${prevY}`, amount: electricityCharge, created_by: adminId })
     }
 
     ledgerEntries.push({ tenant_id: tenantId, statement_id: statement.id, type: 'charge', description: `Water — ${monthName(month)} ${year}`, amount: waterCharge, created_by: adminId })

@@ -61,3 +61,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: message }, { status: 500 })
     }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const { id } = await params
+        const token = req.headers.get('Authorization')?.replace('Bearer ', '')
+        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const client = createServerClient(token)
+        const { data: { user } } = await client.auth.getUser()
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+        if (profile?.role !== 'admin') return NextResponse.json({ error: 'Admin only' }, { status: 403 })
+
+        // 1. Delete associated ledger entries (so foreign key constraint isn't violated)
+        // Since statement ledger entries are created during statement generation, they should be cleaned up.
+        await supabaseAdmin.from('ledger_entries').delete().eq('statement_id', id)
+
+        // 2. Delete the statement itself
+        const { error } = await supabaseAdmin.from('statements').delete().eq('id', id)
+        if (error) throw error
+
+        return NextResponse.json({ success: true })
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to delete statement'
+        return NextResponse.json({ error: message }, { status: 500 })
+    }
+}

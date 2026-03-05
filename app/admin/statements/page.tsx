@@ -24,6 +24,10 @@ export default function StatementsPage() {
     const [chargeDesc, setChargeDesc] = useState('')
     const [chargeAmt, setChargeAmt] = useState('')
 
+    // Delete modal
+    const [delConfirm, setDelConfirm] = useState<string | null>(null)
+    const [deleting, setDeleting] = useState(false)
+
     const getHeaders = async () => {
         const { data: { session } } = await supabase.auth.getSession()
         return { Authorization: `Bearer ${session?.access_token}` }
@@ -112,6 +116,24 @@ export default function StatementsPage() {
         setTimeout(() => setMsg(null), 4000)
     }
 
+    const handleDelete = async () => {
+        if (!delConfirm) return
+        setDeleting(true)
+        try {
+            const headers = await getHeaders()
+            const res = await fetch(`/api/statements/${delConfirm}`, { method: 'DELETE', headers })
+            if (!res.ok) throw new Error((await res.json()).error)
+            await loadData()
+            setDelConfirm(null)
+            setMsg({ type: 'ok', text: 'Draft statement deleted ✓' })
+        } catch (err: unknown) {
+            setMsg({ type: 'err', text: err instanceof Error ? err.message : 'Failed to delete' })
+        } finally {
+            setDeleting(false)
+            setTimeout(() => setMsg(null), 4000)
+        }
+    }
+
     if (!loaded) return <div className="page" style={{ textAlign: 'center', paddingTop: '4rem' }}><Spinner /> Loading...</div>
 
     return (
@@ -177,6 +199,7 @@ export default function StatementsPage() {
                                             <button className="btn btn-ghost btn-sm" onClick={() => viewDetail(s.id)}>👁</button>
                                             {s.status === 'draft' && <button className="btn btn-blue btn-sm" onClick={() => publish(s.id)}>Publish</button>}
                                             <button className="btn btn-ghost btn-sm" onClick={() => setAddCharge(s.id)}>+₹</button>
+                                            {s.status === 'draft' && <button className="btn btn-red btn-sm" onClick={() => setDelConfirm(s.id)}>🗑</button>}
                                         </div>
                                     </td>
                                 </tr>
@@ -240,6 +263,27 @@ export default function StatementsPage() {
                             <input className="fi" type="number" value={chargeAmt} onChange={e => setChargeAmt(e.target.value)} placeholder="e.g. 500" />
                         </div>
                         <button className="btn btn-amber btn-full" onClick={submitCharge}>Add Charge</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Modal */}
+            {delConfirm && (
+                <div className="overlay" onClick={() => !deleting && setDelConfirm(null)}>
+                    <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-hd">
+                            <h2>Delete Draft Statement</h2>
+                            <button className="close-btn" onClick={() => !deleting && setDelConfirm(null)} disabled={deleting}>×</button>
+                        </div>
+                        <div className="mb4" style={{ lineHeight: 1.5 }}>
+                            Are you sure you want to delete this statement? This will also remove any manual charges associated with it. This action cannot be undone.
+                        </div>
+                        <div className="row" style={{ gap: '1rem' }}>
+                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setDelConfirm(null)} disabled={deleting}>Cancel</button>
+                            <button className="btn btn-red" style={{ flex: 1 }} onClick={handleDelete} disabled={deleting}>
+                                {deleting ? <><Spinner /> Deleting...</> : 'Yes, Delete'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -18,6 +18,10 @@ export default function ReadingsPage() {
     const [saving, setSaving] = useState(false)
     const [msg, setMsg] = useState<{ type: string; text: string } | null>(null)
 
+    // Delete modal
+    const [delConfirm, setDelConfirm] = useState<string | null>(null)
+    const [deleting, setDeleting] = useState(false)
+
     const getHeaders = async () => {
         const { data: { session } } = await supabase.auth.getSession()
         return { Authorization: `Bearer ${session?.access_token}` }
@@ -60,6 +64,33 @@ export default function ReadingsPage() {
             setMsg({ type: 'err', text: err instanceof Error ? err.message : 'Failed' })
         } finally {
             setSaving(false)
+            setTimeout(() => setMsg(null), 4000)
+        }
+    }
+
+    const handleEdit = (r: MeterReading) => {
+        setSelTenant(r.tenant_id)
+        setSelM(r.month)
+        setSelY(r.year)
+        setNewReading(String(r.reading_value))
+        setAddOpen(true)
+        window.scrollTo(0, 0)
+    }
+
+    const handleDelete = async () => {
+        if (!delConfirm) return
+        setDeleting(true)
+        try {
+            const headers = await getHeaders()
+            const res = await fetch(`/api/readings/${delConfirm}`, { method: 'DELETE', headers })
+            if (!res.ok) throw new Error((await res.json()).error)
+            await loadData()
+            setDelConfirm(null)
+            setMsg({ type: 'ok', text: 'Reading deleted ✓' })
+        } catch (err: unknown) {
+            setMsg({ type: 'err', text: err instanceof Error ? err.message : 'Failed to delete reading' })
+        } finally {
+            setDeleting(false)
             setTimeout(() => setMsg(null), 4000)
         }
     }
@@ -137,7 +168,7 @@ export default function ReadingsPage() {
                 <div className="card-title">Reading History</div>
                 <div className="tbl-wrap">
                     <table className="tbl">
-                        <thead><tr><th>Month</th><th>Reading</th><th>Source</th><th>Submitted</th></tr></thead>
+                        <thead><tr><th>Month</th><th>Reading</th><th>Source</th><th>Submitted</th><th>Actions</th></tr></thead>
                         <tbody>
                             {tenantReadings.length === 0 ? (
                                 <tr><td colSpan={4} style={{ textAlign: 'center', color: '#64748b' }}>No readings found</td></tr>
@@ -145,14 +176,40 @@ export default function ReadingsPage() {
                                 <tr key={r.id}>
                                     <td className="bold">{fmtM(r.month, r.year)}</td>
                                     <td className="mono bold amber" style={{ fontSize: '1rem' }}>{Number(r.reading_value).toLocaleString()}</td>
-                                    <td><span className={`badge ${r.source === 'ocr' ? 'b-info' : 'b-draft'}`}>{r.source === 'ocr' ? '🤖 OCR' : '✏️ Manual'}</span></td>
                                     <td className="small muted">{fmtDate(r.submitted_at || '')}</td>
+                                    <td>
+                                        <div className="row" style={{ gap: '0.25rem' }}>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(r)}>✏️</button>
+                                            <button className="btn btn-red btn-sm" onClick={() => setDelConfirm(r.id)}>🗑</button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Delete Modal */}
+            {delConfirm && (
+                <div className="overlay" onClick={() => !deleting && setDelConfirm(null)}>
+                    <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-hd">
+                            <h2>Delete Reading</h2>
+                            <button className="close-btn" onClick={() => !deleting && setDelConfirm(null)} disabled={deleting}>×</button>
+                        </div>
+                        <div className="mb4" style={{ lineHeight: 1.5 }}>
+                            Are you sure you want to delete this meter reading? This action cannot be undone.
+                        </div>
+                        <div className="row" style={{ gap: '1rem' }}>
+                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setDelConfirm(null)} disabled={deleting}>Cancel</button>
+                            <button className="btn btn-red" style={{ flex: 1 }} onClick={handleDelete} disabled={deleting}>
+                                {deleting ? <><Spinner /> Deleting...</> : 'Yes, Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
