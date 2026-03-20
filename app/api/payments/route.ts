@@ -107,6 +107,81 @@ export async function POST(req: NextRequest) {
             type: 'payment', description: `Payment via ${payment_method}`, amount: -amount, created_by: user.id,
         })
 
+        // Explicitly update statement total_paid and status
+        // Uses category-aware logic: WiFi is tracked separately
+        const { data: allPayments } = await supabaseAdmin
+            .from('payments')
+            .select('amount, note')
+            .eq('statement_id', statement_id)
+
+        const newTotalPaid = (allPayments || []).reduce((sum, p) => sum + Number(p.amount), 0)
+
+        // Get the current statement charges
+        const { data: currentStmt } = await supabaseAdmin
+            .from('statements')
+            .select('total_due, rent_charge, electricity_charge, water_charge, wifi_charge')
+            .eq('id', statement_id)
+            .single()
+
+        // Determine per-category paid status from all payment notes
+        const paidCategories = new Set<string>()
+        for (const p of (allPayments || [])) {
+            try {
+                const parsed = JSON.parse(p.note || '{}')
+                if (Array.isArray(parsed.categories)) {
+                    parsed.categories.forEach((c: string) => paidCategories.add(c))
+                } else {
+                    // Legacy lump-sum payment — mark all categories as paid
+                    paidCategories.add('rent')
+                    paidCategories.add('electricity')
+                    paidCategories.add('water')
+                    paidCategories.add('wifi')
+                }
+            } catch {
+                // Non-JSON note = legacy payment, mark all as paid
+                paidCategories.add('rent')
+                paidCategories.add('electricity')
+                paidCategories.add('water')
+                paidCategories.add('wifi')
+            }
+        }
+
+        // Core categories (non-WiFi) that have charges > 0
+        const coreCategories = [
+            { key: 'rent', amount: Number(currentStmt?.rent_charge || 0) },
+            { key: 'electricity', amount: Number(currentStmt?.electricity_charge || 0) },
+            { key: 'water', amount: Number(currentStmt?.water_charge || 0) },
+        ]
+        const corePaid = coreCategories
+            .filter(c => c.amount > 0)
+            .every(c => paidCategories.has(c.key))
+
+        const wifiAmount = Number(currentStmt?.wifi_charge || 0)
+        const wifiPaid = wifiAmount <= 0 || paidCategories.has('wifi')
+
+        const totalDue = Number(currentStmt?.total_due || 0)
+
+        let newStatus: string | undefined
+        if (totalDue <= 0) {
+            newStatus = 'paid'
+        } else if (corePaid && wifiPaid) {
+            // Everything paid
+            newStatus = 'paid'
+        } else if (corePaid && !wifiPaid) {
+            // Core charges paid, WiFi still pending → mark as 'paid'
+            // WiFi is tracked separately via category notes
+            newStatus = 'paid'
+        } else if (newTotalPaid > 0) {
+            newStatus = 'partial'
+        }
+
+        if (newStatus) {
+            await supabaseAdmin
+                .from('statements')
+                .update({ total_paid: newTotalPaid, status: newStatus })
+                .eq('id', statement_id)
+        }
+
         return NextResponse.json(payment)
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to record payment'

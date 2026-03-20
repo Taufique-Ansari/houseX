@@ -6,6 +6,37 @@ import Spinner from '@/components/Spinner'
 import { fmtINR, fmtM, fmtDate, PAYMENT_METHODS, MONTHS, CUR_M, CUR_Y } from '@/lib/utils'
 import type { Payment, Tenant, Statement } from '@/lib/types'
 
+type Category = 'rent' | 'electricity' | 'water' | 'wifi'
+
+function getPendingForStatement(statementId: string, allStatements: Statement[], allPayments: Payment[]): Category[] {
+    const stmt = allStatements.find(s => s.id === statementId)
+    if (!stmt) return []
+    const stmtPayments = allPayments.filter(p => p.statement_id === statementId)
+    const paidCats = new Set<Category>()
+    for (const p of stmtPayments) {
+        try {
+            const parsed = JSON.parse(p.note || '{}')
+            if (Array.isArray(parsed.categories)) {
+                parsed.categories.forEach((c: string) => paidCats.add(c as Category))
+            } else {
+                (['rent', 'electricity', 'water', 'wifi'] as Category[]).forEach(c => paidCats.add(c))
+            }
+        } catch {
+            (['rent', 'electricity', 'water', 'wifi'] as Category[]).forEach(c => paidCats.add(c))
+        }
+    }
+    const allCats: { key: Category; amt: number }[] = [
+        { key: 'rent', amt: Number(stmt.rent_charge) },
+        { key: 'electricity', amt: Number(stmt.electricity_charge) },
+        { key: 'water', amt: Number(stmt.water_charge) },
+        { key: 'wifi', amt: Number(stmt.wifi_charge) },
+    ]
+    return allCats.filter(c => c.amt > 0 && !paidCats.has(c.key)).map(c => c.key)
+}
+
+const catIcons: Record<Category, string> = { rent: '🏠', electricity: '⚡', water: '💧', wifi: '📶' }
+const catLabels: Record<Category, string> = { rent: 'Rent', electricity: 'Elec.', water: 'Water', wifi: 'WiFi' }
+
 export default function PaymentsPage() {
     const [payments, setPayments] = useState<Payment[]>([])
     const [tenants, setTenants] = useState<Tenant[]>([])
@@ -102,10 +133,10 @@ export default function PaymentsPage() {
             <div className="card">
                 <div className="tbl-wrap">
                     <table className="tbl">
-                        <thead><tr><th>Tenant</th><th>Statement</th><th>Amount</th><th>Method</th><th>Date</th><th>Note</th><th>Proof</th></tr></thead>
+                        <thead><tr><th>Tenant</th><th>Statement</th><th>Amount</th><th>Method</th><th>Date</th><th>Note</th><th>Pending</th><th>Proof</th></tr></thead>
                         <tbody>
                             {payments.length === 0 ? (
-                                <tr><td colSpan={7} style={{ textAlign: 'center', color: '#64748b' }}>No payments recorded yet</td></tr>
+                                <tr><td colSpan={8} style={{ textAlign: 'center', color: '#64748b' }}>No payments recorded yet</td></tr>
                             ) : payments.map(p => (
                                 <tr key={p.id}>
                                     <td className="bold">{p.tenants?.profiles?.name || '—'}<br /><span className="small muted">{p.tenants?.flat}</span></td>
@@ -114,6 +145,27 @@ export default function PaymentsPage() {
                                     <td><span className="badge b-info">{p.payment_method?.toUpperCase() || '—'}</span></td>
                                     <td className="small">{fmtDate(p.paid_at)}</td>
                                     <td className="small muted">{p.note || '—'}</td>
+                                    <td>
+                                        {(() => {
+                                            const pending = p.statement_id ? getPendingForStatement(p.statement_id, statements, payments) : []
+                                            if (pending.length === 0) {
+                                                return <span className="green" style={{ fontSize: '0.78rem' }}>✓ None</span>
+                                            }
+                                            return (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                                    {pending.map(c => (
+                                                        <span key={c} className="badge" style={{
+                                                            background: c === 'wifi' ? '#4c1d95' : '#451a03',
+                                                            color: c === 'wifi' ? '#c4b5fd' : '#fde68a',
+                                                            fontSize: '0.58rem',
+                                                        }}>
+                                                            {catIcons[c]} {catLabels[c]}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )
+                                        })()}
+                                    </td>
                                     <td>
                                         {p.proof_image_url ? (
                                             <button className="btn btn-ghost btn-sm" onClick={() => setPreviewUrl(p.proof_image_url!)}>

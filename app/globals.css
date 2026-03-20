@@ -164,6 +164,8 @@ button {
     flex: 1;
     margin-left: 240px;
     min-height: 100vh;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 /* MOBILE SIDEBAR TOGGLE */
@@ -656,6 +658,8 @@ select.fi {
 .tbl-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    display: block;
+    width: 100%;
 }
 
 .tbl {
@@ -843,7 +847,22 @@ select.fi {
 }
 
 /* ═════════════ MOBILE RESPONSIVE ═════════════ */
+
+/* Prevent horizontal overflow on entire page */
+html,
+body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+/* Ensure admin pages leave space for the hamburger toggle on mobile */
+.admin-main .page {
+    padding-top: 1.5rem;
+}
+
 @media(max-width:768px) {
+
+    /* Sidebar */
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.25s ease;
@@ -863,8 +882,10 @@ select.fi {
 
     .admin-main {
         margin-left: 0;
+        padding-top: 3rem;
     }
 
+    /* Grids collapse */
     .g2 {
         grid-template-columns: 1fr;
     }
@@ -877,31 +898,149 @@ select.fi {
         grid-template-columns: 1fr 1fr;
     }
 
+    /* Page padding */
     .page {
-        padding: 1rem;
+        padding: 1rem 0.75rem;
     }
 
+    /* Cards */
     .card {
         padding: 1rem;
         border-radius: 12px;
+        overflow: visible;
+        word-break: break-word;
+    }
+
+    .card-inner {
+        padding: 0.75rem;
+    }
+
+    .card-title {
+        font-size: 0.85rem;
+    }
+
+    /* Rows wrap on mobile */
+    .row {
+        flex-wrap: wrap;
+    }
+
+    .row.between {
+        gap: 0.5rem;
+    }
+
+    /* Stats */
+    .stat {
+        padding: 0.875rem;
     }
 
     .stat-num {
         font-size: 1.35rem;
     }
 
+    .stat-label {
+        font-size: 0.62rem;
+    }
+
+    /* Amounts */
     .big-amount {
         font-size: 2rem;
     }
 
+    /* Modal */
     .modal {
         max-width: 100%;
         padding: 1.25rem;
+        margin: 0.5rem;
+        border-radius: 16px;
     }
 
+    .modal-hd h2 {
+        font-size: 0.92rem;
+    }
+
+    /* Buttons */
     .btn {
+        font-size: 0.73rem;
+        padding: 0.5rem 0.875rem;
+    }
+
+    .btn-sm {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.68rem;
+    }
+
+    /* Page header */
+    .page-header {
+        margin-bottom: 1rem;
+    }
+
+    .page-title {
+        font-size: 1rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.72rem;
+    }
+
+    /* Tenant topbar */
+    .tenant-topbar {
+        padding: 0 0.75rem;
+        height: 50px;
+    }
+
+    .tenant-topbar-title {
+        font-size: 0.82rem;
+    }
+
+    /* Forms */
+    .fi {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    .fl {
+        font-size: 0.68rem;
+    }
+
+    /* Upload areas */
+    .drop {
+        padding: 1.25rem 1rem;
+    }
+
+    .drop-icon {
+        font-size: 1.5rem;
+    }
+
+    .drop-text {
+        font-size: 0.78rem;
+    }
+
+    .drop-sub {
+        font-size: 0.68rem;
+    }
+
+    /* Alerts */
+    .alert {
+        padding: 0.6rem 0.75rem;
         font-size: 0.75rem;
-        padding: 0.5rem 1rem;
+    }
+
+    /* Tables: keep nowrap, scroll horizontally via .tbl-wrap */
+    .tbl-wrap {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+    }
+
+    .tbl {
+        min-width: 600px;
+    }
+
+    .tbl td,
+    .tbl th {
+        white-space: nowrap;
     }
 }
 
@@ -914,13 +1053,55 @@ select.fi {
         grid-template-columns: 1fr;
     }
 
+    .page {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .card {
+        padding: 0.75rem;
+        border-radius: 10px;
+    }
+
+    .card-inner {
+        padding: 0.625rem;
+    }
+
     .tbl th {
-        padding: 0.5rem 0.5rem;
-        font-size: 0.64rem;
+        padding: 0.4rem 0.4rem;
+        font-size: 0.6rem;
     }
 
     .tbl td {
-        padding: 0.5rem;
-        font-size: 0.75rem;
+        padding: 0.4rem;
+        font-size: 0.72rem;
+    }
+
+    .big-amount {
+        font-size: 1.6rem;
+    }
+
+    .stat-num {
+        font-size: 1.1rem;
+    }
+
+    .stat {
+        padding: 0.75rem;
+    }
+
+    .btn {
+        font-size: 0.68rem;
+        padding: 0.4rem 0.65rem;
+    }
+
+    .modal {
+        padding: 1rem;
+        margin: 0.25rem;
+    }
+
+    /* Stack the breakdown rows vertically on very small screens */
+    .breakdown-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.125rem !important;
     }
 }

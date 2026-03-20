@@ -6,10 +6,40 @@ import Spinner from '@/components/Spinner'
 import { fmtINR, fmtM, fmtDate, MONTHS, CUR_M, CUR_Y } from '@/lib/utils'
 import type { Statement, Tenant, Payment } from '@/lib/types'
 
+type Category = 'rent' | 'electricity' | 'water' | 'wifi'
+
+function getPendingCategories(statement: Statement, allPayments: Payment[]): Category[] {
+    const stmtPayments = allPayments.filter(p => p.statement_id === statement.id)
+    const paidCats = new Set<Category>()
+    for (const p of stmtPayments) {
+        try {
+            const parsed = JSON.parse(p.note || '{}')
+            if (Array.isArray(parsed.categories)) {
+                parsed.categories.forEach((c: string) => paidCats.add(c as Category))
+            } else {
+                (['rent', 'electricity', 'water', 'wifi'] as Category[]).forEach(c => paidCats.add(c))
+            }
+        } catch {
+            (['rent', 'electricity', 'water', 'wifi'] as Category[]).forEach(c => paidCats.add(c))
+        }
+    }
+    const allCats: { key: Category; amt: number }[] = [
+        { key: 'rent', amt: Number(statement.rent_charge) },
+        { key: 'electricity', amt: Number(statement.electricity_charge) },
+        { key: 'water', amt: Number(statement.water_charge) },
+        { key: 'wifi', amt: Number(statement.wifi_charge) },
+    ]
+    return allCats.filter(c => c.amt > 0 && !paidCats.has(c.key)).map(c => c.key)
+}
+
+const catIcons: Record<Category, string> = { rent: '🏠', electricity: '⚡', water: '💧', wifi: '📶' }
+const catLabels: Record<Category, string> = { rent: 'Rent', electricity: 'Elec.', water: 'Water', wifi: 'WiFi' }
+
 export default function StatementsPage() {
     const [statements, setStatements] = useState<Statement[]>([])
     const [tenants, setTenants] = useState<Tenant[]>([])
     const [loaded, setLoaded] = useState(false)
+    const [allPayments, setAllPayments] = useState<Payment[]>([])
     const [loading, setLoading] = useState(false)
     const [msg, setMsg] = useState<{ type: string; text: string } | null>(null)
     const [selM, setSelM] = useState(CUR_M)
@@ -35,14 +65,17 @@ export default function StatementsPage() {
 
     const loadData = useCallback(async () => {
         const headers = await getHeaders()
-        const [stmtRes, tenantRes] = await Promise.all([
+        const [stmtRes, tenantRes, payRes] = await Promise.all([
             fetch('/api/statements', { headers }),
             fetch('/api/tenants', { headers }),
+            fetch('/api/payments', { headers }),
         ])
         const stmtData = await stmtRes.json()
         const tenantData = await tenantRes.json()
+        const payData = await payRes.json()
         setStatements(Array.isArray(stmtData) ? stmtData : [])
         setTenants(Array.isArray(tenantData) ? tenantData : [])
+        setAllPayments(Array.isArray(payData) ? payData : [])
         setLoaded(true)
     }, [])
 
@@ -153,7 +186,7 @@ export default function StatementsPage() {
             {msg && <div className={`alert ${msg.type === 'ok' ? 'a-ok' : 'a-err'} mb4`}>{msg.text}</div>}
 
             {/* Filters */}
-            <div className="g4 mb4">
+            <div className="g2 mb4">
                 <select className="fi" value={selM} onChange={e => setSelM(+e.target.value)}>
                     {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                 </select>
@@ -175,11 +208,11 @@ export default function StatementsPage() {
                 <div className="tbl-wrap">
                     <table className="tbl">
                         <thead><tr>
-                            <th>Tenant</th><th>Month</th><th>Rent</th><th>Elec.</th><th>Water</th><th>WiFi</th><th>P. Dues</th><th>Credit</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th>
+                            <th>Tenant</th><th>Month</th><th>Rent</th><th>Elec.</th><th>Water</th><th>WiFi</th><th>P. Dues</th><th>Credit</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Pending</th><th>Actions</th>
                         </tr></thead>
                         <tbody>
                             {filtered.length === 0 ? (
-                                <tr><td colSpan={13} style={{ textAlign: 'center', color: '#64748b' }}>No statements found</td></tr>
+                                <tr><td colSpan={14} style={{ textAlign: 'center', color: '#64748b' }}>No statements found</td></tr>
                             ) : filtered.map(s => (
                                 <tr key={s.id}>
                                     <td className="bold">{s.tenants?.profiles?.name || '—'}<br /><span className="small muted">{s.tenants?.flat}</span></td>
@@ -194,6 +227,28 @@ export default function StatementsPage() {
                                     <td className="mono bold green">{fmtINR(Number(s.total_paid))}</td>
                                     <td className="mono bold" style={{ color: Number(s.balance) > 0 ? '#ef4444' : '#10b981' }}>{fmtINR(Number(s.balance))}</td>
                                     <td><span className={`badge b-${s.status}`}>{s.status.toUpperCase()}</span></td>
+                                    <td>
+                                        {(() => {
+                                            const pending = getPendingCategories(s, allPayments)
+                                            if (pending.length === 0 && Number(s.total_paid) > 0) {
+                                                return <span className="green" style={{ fontSize: '0.78rem' }}>✓ None</span>
+                                            }
+                                            if (pending.length === 0) return <span className="muted" style={{ fontSize: '0.72rem' }}>—</span>
+                                            return (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                                    {pending.map(c => (
+                                                        <span key={c} className="badge" style={{
+                                                            background: c === 'wifi' ? '#4c1d95' : '#451a03',
+                                                            color: c === 'wifi' ? '#c4b5fd' : '#fde68a',
+                                                            fontSize: '0.58rem',
+                                                        }}>
+                                                            {catIcons[c]} {catLabels[c]}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )
+                                        })()}
+                                    </td>
                                     <td>
                                         <div className="row" style={{ gap: '0.25rem' }}>
                                             <button className="btn btn-ghost btn-sm" onClick={() => viewDetail(s.id)}>👁</button>
@@ -220,26 +275,101 @@ export default function StatementsPage() {
                         <div className="mb4">
                             <div className="mono bold amber mb1" style={{ fontSize: '0.75rem' }}>{fmtM(detail.month, detail.year)} {detail.is_prorated ? '(Prorated)' : ''}</div>
                             <div className="card-inner" style={{ fontSize: '0.82rem' }}>
-                                <div className="row between mb2"><span>🏠 Rent</span><span className="mono bold">{fmtINR(Number(detail.rent_charge))}</span></div>
-                                {Number(detail.electricity_charge) > 0 && <div className="row between mb2"><span>⚡ Electricity ({detail.electricity_units} kWh × ₹{Number(detail.electricity_rate).toFixed(2)})</span><span className="mono bold">{fmtINR(Number(detail.electricity_charge))}</span></div>}
-                                <div className="row between mb2"><span>💧 Water</span><span className="mono bold">{fmtINR(Number(detail.water_charge))}</span></div>
-                                {Number(detail.wifi_charge) > 0 && <div className="row between mb2"><span>📶 WiFi</span><span className="mono bold">{fmtINR(Number(detail.wifi_charge))}</span></div>}
-                                {(detail.one_time_charges || []).map((c, i) => <div className="row between mb2" key={i}><span>🔸 {c.description}</span><span className="mono bold">{fmtINR(Number(c.amount))}</span></div>)}
-                                {Number(detail.previous_dues) > 0 && <div className="row between mb2"><span className="red">⭕ Previous Dues</span><span className="mono bold red">{fmtINR(Number(detail.previous_dues))}</span></div>}
-                                {Number(detail.credit_from_previous) > 0 && <div className="row between mb2"><span className="green">✨ Credit Applied</span><span className="mono bold green">-{fmtINR(Number(detail.credit_from_previous))}</span></div>}
+                                <div className="row between mb2 breakdown-row"><span>🏠 Rent</span><span className="mono bold">{fmtINR(Number(detail.rent_charge))}</span></div>
+                                {Number(detail.electricity_charge) > 0 && <div className="row between mb2 breakdown-row"><span>⚡ Electricity ({detail.electricity_units} kWh × ₹{Number(detail.electricity_rate).toFixed(2)})</span><span className="mono bold">{fmtINR(Number(detail.electricity_charge))}</span></div>}
+                                <div className="row between mb2 breakdown-row"><span>💧 Water</span><span className="mono bold">{fmtINR(Number(detail.water_charge))}</span></div>
+                                {Number(detail.wifi_charge) > 0 && <div className="row between mb2 breakdown-row"><span>📶 WiFi</span><span className="mono bold">{fmtINR(Number(detail.wifi_charge))}</span></div>}
+                                {(detail.one_time_charges || []).map((c, i) => <div className="row between mb2 breakdown-row" key={i}><span>🔸 {c.description}</span><span className="mono bold">{fmtINR(Number(c.amount))}</span></div>)}
+                                {Number(detail.previous_dues) > 0 && <div className="row between mb2 breakdown-row"><span className="red">⭕ Previous Dues</span><span className="mono bold red">{fmtINR(Number(detail.previous_dues))}</span></div>}
+                                {Number(detail.credit_from_previous) > 0 && <div className="row between mb2 breakdown-row"><span className="green">✨ Credit Applied</span><span className="mono bold green">-{fmtINR(Number(detail.credit_from_previous))}</span></div>}
                                 <div className="div" />
-                                <div className="row between"><span className="bold">Total Due</span><span className="mono bold amber" style={{ fontSize: '1.1rem' }}>{fmtINR(Number(detail.total_due))}</span></div>
+                                <div className="row between breakdown-row"><span className="bold">Total Due</span><span className="mono bold amber" style={{ fontSize: '1.1rem' }}>{fmtINR(Number(detail.total_due))}</span></div>
                             </div>
                         </div>
+
+                        {/* Per-Category Payment Status */}
+                        {detail.payments && detail.payments.length > 0 && (() => {
+                            const paidCats = new Set<string>()
+                            for (const p of detail.payments) {
+                                try {
+                                    const parsed = JSON.parse(p.note || '{}')
+                                    if (Array.isArray(parsed.categories)) {
+                                        parsed.categories.forEach((c: string) => paidCats.add(c))
+                                    } else {
+                                        // Legacy lump-sum payment
+                                        ;['rent', 'electricity', 'water', 'wifi'].forEach(c => paidCats.add(c))
+                                    }
+                                } catch {
+                                    ;['rent', 'electricity', 'water', 'wifi'].forEach(c => paidCats.add(c))
+                                }
+                            }
+                            const cats = [
+                                { key: 'rent', label: '🏠 Rent', amt: Number(detail.rent_charge) },
+                                { key: 'electricity', label: '⚡ Electricity', amt: Number(detail.electricity_charge) },
+                                { key: 'water', label: '💧 Water', amt: Number(detail.water_charge) },
+                                { key: 'wifi', label: '📶 WiFi', amt: Number(detail.wifi_charge) },
+                            ].filter(c => c.amt > 0)
+                            const hasPending = cats.some(c => !paidCats.has(c.key))
+
+                            return (
+                                <div className="mb4">
+                                    <div className="bold mb2" style={{ fontSize: '0.82rem' }}>Category Payment Status</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                        {cats.map(c => (
+                                            <div key={c.key} className="row between" style={{
+                                                padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem',
+                                                background: paidCats.has(c.key) ? '#052e1622' : '#450a0a22',
+                                                border: `1px solid ${paidCats.has(c.key) ? '#14532d66' : '#7f1d1d66'}`,
+                                                flexWrap: 'wrap', gap: '0.25rem'
+                                            }}>
+                                                <span>{c.label}</span>
+                                                <div className="row" style={{ gap: '0.375rem' }}>
+                                                    <span className="mono" style={{ fontSize: '0.78rem' }}>{fmtINR(c.amt)}</span>
+                                                    <span className={`badge ${paidCats.has(c.key) ? 'b-paid' : 'b-overdue'}`}>
+                                                        {paidCats.has(c.key) ? '✓ Paid' : '⏳ Pending'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {hasPending && (
+                                        <div className="alert a-warn mt3" style={{ fontSize: '0.75rem' }}>
+                                            ⚠️ Some charges are still pending. The tenant has chosen to pay selectively.
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
+
                         {detail.payments && detail.payments.length > 0 && (
                             <div>
-                                <div className="bold mb2" style={{ fontSize: '0.82rem' }}>Payments</div>
-                                {detail.payments.map(p => (
-                                    <div key={p.id} className="row between mb2" style={{ fontSize: '0.8rem' }}>
-                                        <span>{fmtDate(p.paid_at)} — {p.payment_method}</span>
-                                        <span className="mono bold green">{fmtINR(Number(p.amount))}</span>
-                                    </div>
-                                ))}
+                                <div className="bold mb2" style={{ fontSize: '0.82rem' }}>Payment History</div>
+                                {detail.payments.map(p => {
+                                    let catInfo = ''
+                                    try {
+                                        const parsed = JSON.parse(p.note || '{}')
+                                        if (Array.isArray(parsed.categories)) {
+                                            catInfo = parsed.categories.map((c: string) => {
+                                                const labels: Record<string, string> = { rent: '🏠', electricity: '⚡', water: '💧', wifi: '📶' }
+                                                return labels[c] || c
+                                            }).join(' ')
+                                            if (parsed.userNote) catInfo += ` — ${parsed.userNote}`
+                                        } else {
+                                            catInfo = p.note || ''
+                                        }
+                                    } catch {
+                                        catInfo = p.note || ''
+                                    }
+                                    return (
+                                        <div key={p.id} className="row between mb2" style={{ fontSize: '0.8rem', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                            <div>
+                                                <span>{fmtDate(p.paid_at)} — {p.payment_method}</span>
+                                                {catInfo && <div className="small muted" style={{ fontSize: '0.7rem' }}>{catInfo}</div>}
+                                            </div>
+                                            <span className="mono bold green">{fmtINR(Number(p.amount))}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         )}
                     </div>

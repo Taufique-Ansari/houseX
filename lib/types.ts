@@ -145,3 +145,35 @@ export interface TenantDocument {
     uploaded_at?: string
     notes?: string
 }
+
+// Additional legacy types needed for dashboard/page.tsx (from old branch code)
+export interface ElectricityRate {
+    id: string
+    effective_date: string
+    month?: number
+    year?: number
+    total_units?: number
+    total_amount?: number
+    source?: 'manual' | 'bill_ocr'
+    per_unit_rate: number
+    created_at?: string
+    created_by?: string
+}
+
+export interface Bill {
+    id: string
+    tenant_id: string
+    month: number
+    year: number
+    units_used: number
+    per_unit_rate: number
+    prev_reading: number
+    curr_reading: number
+    amount: number
+    status: 'draft' | 'pending' | 'paid' | 'overdue'
+    payment_proof_url?: string
+    generated_at: string
+    generated_by?: string
+    // Joined
+    profiles?: { name: string; flat: string }
+}
